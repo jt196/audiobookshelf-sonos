@@ -2,7 +2,7 @@ Note by jt196:
 
 > I've merged the original docs with mine. As of 27/09/23, I still can't get this to work, but hopefully I've made some progress into getting this working and someone else might have a breakthrough with the work I've done.
 >
-> The project should be a bit easier to test and debug now. I'd recommend not running it in a Docker container, until it's working, but it should work fine (with nodemon) in a container.
+> The project should be a bit easier to test and debug now. I'd recommend not running it in a Docker container, until it's working, but it should work _up to a point_ (with nodemon) in a container.
 
 Differences between this and the original repo:
 
