@@ -18,7 +18,7 @@ Differences between this and the original repo:
 1. I can add the service to Sonos with the CSD settings below - I had to uncheck the manifest box.
 2. If I try to open on the app, I get what looks like a perfectly formed soap response.
 3. If I make a [request](#soap-requests), I get a correctly formed response for `getMetaData()` and `getLastUpdate()`. Details below.
-4. Sonos requests come through using SoapUI, **but** even with a mock response that's exactly the same as the Sonos docs, I still get an "Unable to Browse Music" error.
+4. Sonos requests come through using [SoapUI](#soapui-testing), **but** even with a mock response that's exactly the same as the Sonos docs, I still get an "Unable to Browse Music" error.
 
 # Where Does this leave us
 
