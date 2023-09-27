@@ -13,6 +13,18 @@ Differences between this and the original repo:
    2. Returns `mediaMetadata` not `mediaContent`
    3. Removed `libraryItem.media.audioFiles[0].mimeType`, `authorId: authorId`, `narratorId: narratorId` references which weren't in the ABS [API spec for library](https://api.audiobookshelf.org/#update-a-library-item-39-s-media).
 
+# What Does Work
+
+1. I can add the service to Sonos with the CSD settings below - I had to uncheck the manifest box.
+2. If I try to open on the app, I get what looks like a perfectly formed soap response.
+3. If I make a [request](#soap-requests), I get a correctly formed response for `getMetaData()` and `getLastUpdate()`. Details below.
+4. Sonos requests come through using SoapUI, **but** even with a mock response that's exactly the same as the Sonos docs, I still get an "Unable to Browse Music" error.
+
+# Where Does this leave us
+
+- If someone can get their library to display inside the sonos app (I'm using v1), please share their config.
+- Once we're at that point, things should be relatively easy going forward.
+
 # Audiobookshelf Sonos
 
 A standalone server that adds support for listening to an Audiobookshelf library on Sonos speakers. Built on top of the Sonos Music API (SMAPI).
