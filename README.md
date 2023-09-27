@@ -1,3 +1,18 @@
+Note by jt196:
+
+> I've merged the original docs with mine. As of 27/09/23, I still can't get this to work, but hopefully I've made some progress into getting this working and someone else might have a breakthrough with the work I've done.
+>
+> The project should be a bit easier to test and debug now. I'd recommend not running it in a Docker container, until it's working, but it should work fine (with nodemon) in a container.
+
+Differences between this and the original repo:
+
+1. Runs using .env variables
+2. Runs with nodemon, meaning changes you make are reloaded. If you share the files with a docker container, they'll immediately update rather than having to restart the container.
+3. Improvements to the `buildLibraryMetadataResult()` function, returning correctly structured xml data.
+   1. Album artwork url corrected
+   2. Returns `mediaMetadata` not `mediaContent`
+   3. Removed `libraryItem.media.audioFiles[0].mimeType`, `authorId: authorId`, `narratorId: narratorId` references which weren't in the ABS [API spec for library](https://api.audiobookshelf.org/#update-a-library-item-39-s-media).
+
 # Audiobookshelf Sonos
 
 A standalone server that adds support for listening to an Audiobookshelf library on Sonos speakers. Built on top of the Sonos Music API (SMAPI).
@@ -110,3 +125,169 @@ ABS_TOKEN=<abs_api_token>
 6. Select a book to listen to
 7. If there is already progress on the book, it should start from where Audiobookshelf left off
    - Otherwise it will start from the beginning
+
+# Testing
+
+## SOAP Requests
+
+Very useful to try these and make sure your server is returning the correct response.
+
+Going to the url http://localhost/wsdl (or whatever your address is) will just return empty values. You need to send a POST request. Here's the setup I use in Postman/Thunderclient.
+
+### getMetadata
+
+- URL: http://localhost/wsdl
+- Request type: POST
+- Headers: "Content-Type": "text/xml"
+- Body:
+
+```XML
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+    <s:Header>
+        <credentials xmlns="http://www.sonos.com/Services/1.1">
+            <deviceId></deviceId>
+            <deviceProvider></deviceProvider>
+        </credentials>
+    </s:Header>
+    <s:Body>
+        <getMetadata xmlns="http://www.sonos.com/Services/1.1">
+            <id>root</id>
+            <index>0</index>
+            <count>100</count>
+        </getMetadata>
+    </s:Body>
+</s:Envelope>
+```
+
+This should give you a response that is formatted like this:
+
+```XML
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tns="http://www.sonos.com/Services/1.1" >
+    <soap:Body>
+        <getMetadataResponse xmlns="http://www.sonos.com/Services/1.1">
+            <getMetadataResult>
+                <count>707</count>
+                <total>707</total>
+                <index>0</index>
+                <mediaMetadata>
+                    <itemType>audiobook</itemType>
+                    <id>70edd71c-0088-49b8-8ea5-210c8049ce09</id>
+                    <canPlay>true</canPlay>
+                    <canResume>true</canResume>
+                    <title>The Good Shepherd</title>
+                    <summary>The Good Shepherd is now a major motion picture, Greyhound , scripted by and starring Tom Hanks, directed by Aaron Schneider, and produced by Gary Goetzman. A convoy of 37 merchant ships is ploughing through icy, submarine-infested North Atlantic seas during the most critical days of World War II, when the German submarines had the upper hand and Allied shipping was suffering heavy losses. In charge is Commander George Krause, an untested veteran of the US Navy. Hounded by a wolf pack of German U-boats, he faces 48 hours of desperate peril trapped the bridge of the ship. Exhausted beyond measure, he must make countless and terrible decisions as he leads his small fighting force against the relentless U-boats.</summary>
+                    <author>C.S. Forester</author>
+                    <narrator>Edoardo Ballerini</narrator>
+                    <albumArtURI>https://audiobooks.jamestorr.com/api/items/70edd71c-0088-49b8-8ea5-210c8049ce09/cover?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c3JfdHN5bGNoeDB1MTM4MGU0bXA1IiwidXNlcm5hbWUiOiJqdDE5NiIsImlhdCI6MTY3NDMyMDQ0MH0.h7xzVwvrKN2FXmjuzCIcHf6GtCF7v0BhEpCWO1tLKo4</albumArtURI>
+                </mediaMetadata>
+            </getMetadataResult>
+        </getMetadataResponse>
+    </soap:Body>
+</soap:Envelope>
+```
+
+## getLastUpdate
+
+Sonos also needs access to this data apparently.
+Use the same details as above but try this in the body:
+
+```XML
+<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:tns="http://www.sonos.com/Services/1.1">
+    <soap:Header>
+        <tns:credentials>
+            <tns:zonePlayerId></tns:zonePlayerId>
+            <tns:deviceId></tns:deviceId>
+            <tns:deviceProvider></tns:deviceProvider>
+            <tns:sessionId></tns:sessionId>
+        </tns:credentials>
+        <tns:context>
+            <tns:timeZone></tns:timeZone>
+        </tns:context>
+    </soap:Header>
+    <soap:Body>
+        <tns:getLastUpdate/>
+    </soap:Body>
+</soap:Envelope>
+```
+
+I got this response:
+
+```XML
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tns="http://www.sonos.com/Services/1.1">
+    <soap:Body>
+        <getLastUpdateResponse xmlns="http://www.sonos.com/Services/1.1">
+            <getLastUpdateResult>
+                <catalog>1695816021304</catalog>
+                <autoRefreshEnabled>true</autoRefreshEnabled>
+                <favorites>1695816021305</favorites>
+                <pollInterval>10</pollInterval>
+            </getLastUpdateResult>
+        </getLastUpdateResponse>
+    </soap:Body>
+</soap:Envelope>
+```
+
+## Audiobookshelf
+
+You can also request your library to check that you have all the details correctly entered.
+
+- URL: <library_url>/api/libraries/<library_id>/items
+  - e.g. https://audiobooks.example.com/api/libraries/87cfd553-cc5e-6a7b-1f23-123456eb62d7
+- Request Type: GET
+- Headers: "Authorization": "Bearer <your_ABS_TOKEN>"
+
+# soapUI testing
+
+You can download the Java app [here](https://www.soapui.org/downloads/)
+
+The steps I went through to test were:
+
+1. In soapUI > New Soap Project
+2. Enter name
+3. Browse to your _sonos.wsdl_ file for the wsdl file
+4. Right click on the project and select _New Soap MockService_, name it.
+5. Right click on the new mock service > New Operation
+6. You'll need them for _getMetadata_ and _getLastUpdate_.
+7. I pasted in the items from the requests above, alternatively you could try adding some of the basic ones from the SOAP Requests and Responses docs below.
+8. Right click on the service > Start Minimized. Double click on the service in the pane on the right to maximize.
+9. You should see some info in the SoapUI log on the bottom of the screen.
+10. The port it uses is 8080, so I had to update the customsd page with the new URL.
+11. If you add the new service, you should be able to see requests coming in in the service log.
+12. Double click on the getMetadata > Response and you should also see the latest request.
+
+# Documentation
+
+## Sonos
+
+Sonos docs aren't particularly well-optimized for SEO, so you have to dig around for them, but they're there.
+
+I found these ones quite helpful:
+
+- [Getting Started](https://devdocs.sonos.com/docs/content-service-get-started)
+- [SOAP Requests and Responses](https://devdocs.sonos.com/docs/soap-requests-and-responses)
+- [Test Your Service](https://devdocs.sonos.com/docs/test-your-service)
+- [Content on Sonos](https://devdocs.sonos.com/docs/content-on-sonos)
+
+- [Sonos forum](https://en.community.sonos.com)
+
+## Stack Overflow
+
+Some questions that might be useful
+
+- [customSD does not show up](https://stackoverflow.com/questions/57281874/with-a-sonos-player-adding-local-service-to-customsd-does-not-show-up-music-ser)
+- [Soap Server with Express](https://stackoverflow.com/questions/33062026/soap-server-with-express-js/38998377#38998377)
+
+## Audiobookshelf
+
+- [API docs for library](https://api.audiobookshelf.org/#update-a-library-item-39-s-media)
+
+## NPM packages
+
+- [Soap](https://www.npmjs.com/package/soap)
+  - [GitHub](github.com/vpulim/node-soap)
+
+## Misc
+
+- [SoapUI](https://www.soapui.org/downloads)
