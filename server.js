@@ -6,9 +6,13 @@ const config = require("./config");
 /* CONFIG */
 const EXPRESS_APP = express();
 const SONOS_SOAP_SERVICE = require("./sonos-service");
+console.log("🚀 ~ file: server.js:9 ~ SONOS_SOAP_SERVICE:", SONOS_SOAP_SERVICE);
 const HTTP_PORT = config.HTTP_PORT;
+console.log("🚀 ~ file: server.js:10 ~ HTTP_PORT:", HTTP_PORT);
 const SOAP_URI = config.SOAP_URI;
+console.log("🚀 ~ file: server.js:12 ~ SOAP_URI:", SOAP_URI);
 const SOAP_ENDPOINT = config.SOAP_ENDPOINT;
+console.log("🚀 ~ file: server.js:14 ~ SOAP_ENDPOINT:", SOAP_ENDPOINT);
 const SONOS_WSDL_FILE = config.SONOS_WSDL_FILE;
 
 /**********/
@@ -34,7 +38,7 @@ EXPRESS_APP.listen(HTTP_PORT, function () {
 
   soaper.log = function (type, data) {
     // uncomment to log SOAP requests coming in
-    // console.log(data)
+    // console.log(data);
   };
 
   /*

@@ -23,7 +23,6 @@ var sonosService = {
         return getMediaURI(args["id"]);
       },
       getLastUpdate: function (args) {
-        // accompanies most calls to see if sonos needs to update it's content
         return {
           getLastUpdateResult: {
             catalog: `${Date.now()}`, // just force update every single time :D

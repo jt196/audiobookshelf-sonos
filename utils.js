@@ -2,26 +2,40 @@ const axios = require("axios");
 var config = require("./config");
 
 const ABS_TOKEN = config.ABS_TOKEN;
+console.log("🚀 ~ file: utils.js:5 ~ ABS_TOKEN:", ABS_TOKEN);
 const ABS_URI = config.ABS_URI;
+console.log("🚀 ~ file: utils.js:7 ~ ABS_URI:", ABS_URI);
 const ABS_LIBRARY_ID = config.ABS_LIBRARY_ID;
+console.log("🚀 ~ file: utils.js:9 ~ ABS_LIBRARY_ID:", ABS_LIBRARY_ID);
 
 // Network Requests
 async function getLibraryItems() {
+  console.log("🚀 ~ file: utils.js:13 ~ getLibraryItems ~ getLibraryItems");
   try {
     const config = {
       headers: { Authorization: `Bearer ${ABS_TOKEN}` },
+      timeout: 10000,
     };
+    console.log(
+      "🚀 ~ file: utils.js:17 ~ getLibraryItems ~ ABS_TOKEN:",
+      ABS_TOKEN
+    );
 
     let path = `${ABS_URI}/api/libraries/${ABS_LIBRARY_ID}/items`;
 
+    console.log("🚀 ~ file: utils.js:20 ~ getLibraryItems ~ path:", path);
+    console.log("🚀 ~ file: utils.js:23 ~ getLibraryItems ~ config:", config);
     const { data } = await axios.get(path, config);
+    // console.log("🚀 ~ file: utils.js:28 ~ getLibraryItems ~ data:", data);
     return data;
   } catch (error) {
+    console.log(error.response ? error.response.data : error.message);
     console.log(`[getLibraryItems] Error caught. Error: ${error}`);
   }
 }
 
 async function getLibraryItem(libraryItemId) {
+  console.log("🚀 ~ file: utils.js:31 ~ getLibraryItem ~ getLibraryItem");
   try {
     const config = {
       headers: { Authorization: `Bearer ${ABS_TOKEN}` },
@@ -29,6 +43,7 @@ async function getLibraryItem(libraryItemId) {
 
     let path = `${ABS_URI}/api/items/${libraryItemId}`;
 
+    console.log("🚀 ~ file: utils.js:36 ~ getLibraryItem ~ path:", path);
     const { data } = await axios.get(path, config);
     return data;
   } catch (error) {
@@ -44,6 +59,7 @@ async function getABSProgress(libraryItemId) {
 
     let path = `${ABS_URI}/api/me/progress/${libraryItemId}`;
 
+    console.log("🚀 ~ file: utils.js:51 ~ getABSProgress ~ path:", path);
     const { data } = await axios.get(path, config);
     return data;
   } catch (error) {
@@ -52,6 +68,7 @@ async function getABSProgress(libraryItemId) {
 }
 
 async function setProgress(updateObject, progress) {
+  console.log("🚀 ~ file: utils.js:63 ~ setProgress ~ setProgress");
   try {
     let libraryItemId = updateObject.libraryItemId;
 
@@ -61,6 +78,7 @@ async function setProgress(updateObject, progress) {
 
     let path = `${ABS_URI}/api/me/progress/${libraryItemId}`;
 
+    console.log("🚀 ~ file: utils.js:69 ~ setProgress ~ path:", path);
     const updateData = {
       duration: progress.bookDuration,
       currentTime: progress.progress,
@@ -77,69 +95,127 @@ async function setProgress(updateObject, progress) {
 
 // Build the Objects
 async function buildMediaURI(id) {
+  console.log("Build Media URI called!");
   let path = `${ABS_URI}/s/item/${id}?token=${ABS_TOKEN}`;
 
+  console.log("🚀 ~ file: utils.js:89 ~ buildMediaURI ~ path:", path);
   return {
     getMediaURIResult: path,
   };
 }
 
 async function buildLibraryMetadataResult(res) {
+  console.log(
+    "🚀 ~ file: utils.js:99 ~ buildLibraryMetadataResult ~ buildLibraryMetadataResult"
+  );
+  if (!res || !res.results) {
+    return null;
+  }
+
   let libraryItems = res.results;
   let count = res.total;
   let total = count;
   let mediaMetadata = [];
 
   for (const libraryItem of libraryItems) {
-    // https://developer.sonos.com/build/content-service-add-features/save-resume-playback/
+    let authorId =
+      libraryItem.media.metadata &&
+      libraryItem.media.metadata.authors &&
+      libraryItem.media.metadata.authors[0]
+        ? libraryItem.media.metadata.authors[0].id
+        : null;
+    let authorName = authorId
+      ? libraryItem.media.metadata.authors[0].name
+      : null;
+    let narratorId =
+      libraryItem.media.metadata &&
+      libraryItem.media.metadata.narrators &&
+      libraryItem.media.metadata.narrators[0]
+        ? libraryItem.media.metadata.narrators[0].id
+        : null;
+    let narratorName = narratorId
+      ? libraryItem.media.metadata.narrators[0].name
+      : null;
+
     var mediaMetadataEntry = {
       itemType: "audiobook",
       id: libraryItem.id,
-      mimeType: libraryItem.media.audioFiles[0].mimeType,
+      // mimeType: libraryItem.media.audioFiles[0].mimeType,
       canPlay: true,
       canResume: true,
-      title: libraryItem.media.metadata.title,
-      summary: libraryItem.media.metadata.description,
-      authorId: libraryItem.media.metadata.authors[0].id,
-      author: libraryItem.media.metadata.authors[0].name,
-      narratorId: libraryItem.media.metadata.narrators[0].id,
-      narrator: libraryItem.media.metadata.narrators[0].name,
-      albumArtURI: `${ABS_URI}${libraryItem.media.coverPath}?token=${ABS_TOKEN}`,
+      title: libraryItem.media.metadata
+        ? libraryItem.media.metadata.title
+        : null,
+      summary: libraryItem.media.metadata
+        ? libraryItem.media.metadata.description
+        : null,
+      // authorId: authorId,
+      author: libraryItem.media.metadata.authorName,
+      // narratorId: narratorId,
+      narrator: libraryItem.media.metadata.narratorName,
+      albumArtURI: `${ABS_URI}/api/items/${libraryItem.id}/cover?token=${ABS_TOKEN}`,
     };
 
     mediaMetadata.push(mediaMetadataEntry);
   }
 
-  // count and total HAVE to be correct, otherwise the sonos app falls over silently
   return {
     getMetadataResult: {
       count: count,
       total: total,
       index: 0,
-      mediaCollection: mediaMetadata,
+      mediaMetadata: mediaMetadata, // Adjusted here
     },
   };
 }
 
 async function buildAudiobookTrackList(libraryItem, progressData) {
+  console.log(
+    "🚀 ~ file: utils.js:147 ~ buildAudiobookTrackList ~ buildAudiobookTrackList"
+  );
+  if (!libraryItem || !libraryItem.media || !libraryItem.media.audioFiles) {
+    return null;
+  }
+
   let tracks = libraryItem.media.audioFiles;
   let icount = tracks.length;
   let itotal = tracks.length;
   let imediaMetadata = [];
 
   for (const track of tracks) {
+    let authorId =
+      libraryItem.media.metadata &&
+      libraryItem.media.metadata.authors &&
+      libraryItem.media.metadata.authors[0]
+        ? libraryItem.media.metadata.authors[0].id
+        : null;
+    let authorName = authorId
+      ? libraryItem.media.metadata.authors[0].name
+      : null;
+    let narratorId =
+      libraryItem.media.metadata &&
+      libraryItem.media.metadata.narrators &&
+      libraryItem.media.metadata.narrators[0]
+        ? libraryItem.media.metadata.narrators[0].id
+        : null;
+    let narratorName = narratorId
+      ? libraryItem.media.metadata.narrators[0].name
+      : null;
+
     var mediaMetadataEntry = {
       id: `${libraryItem.id}/${track.metadata.filename}`,
       itemType: "track",
       title: track.metadata.filename,
       mimeType: track.mimeType,
       trackMetadata: {
-        authorId: libraryItem.media.metadata.authors[0].id,
-        author: libraryItem.media.metadata.authors[0].name,
-        narratorId: libraryItem.media.metadata.narrators[0].id,
-        narrator: libraryItem.media.metadata.narrators[0].name,
+        authorId: authorId,
+        author: authorName,
+        narratorId: narratorId,
+        narrator: narratorName,
         duration: track.duration,
-        book: libraryItem.media.metadata.title,
+        book: libraryItem.media.metadata
+          ? libraryItem.media.metadata.title
+          : null,
         albumArtURI: `${ABS_URI}${libraryItem.media.coverPath}?token=${ABS_TOKEN}`,
         canPlay: true,
         canAddToFavorites: false,
@@ -152,10 +228,8 @@ async function buildAudiobookTrackList(libraryItem, progressData) {
   let positionInformation = {};
   if (progressData) {
     positionInformation = {
-      id: `${libraryItem.id}/${progressData.partName}`, // li_{string}/Part##.mp3
+      id: `${libraryItem.id}/${progressData.partName}`,
       index: 0,
-      // 1) Sonos gets upset if there are too many decimals
-      // 2) ABS returns everything in seconds, so multiple by 1000 for milliseconds for sonos
       offsetMillis: Math.round(progressData.relativeTimeForPart * 1000),
     };
   }
@@ -172,6 +246,9 @@ async function buildAudiobookTrackList(libraryItem, progressData) {
 }
 
 function partNameAndRelativeProgress(currentProgress, libraryItem) {
+  console.log(
+    "🚀 ~ file: utils.js:205 ~ partNameAndRelativeProgress ~ partNameAndRelativeProgress"
+  );
   // create an array of each parts "running sum" (the current part + all previous parts durations)
   // find which part the currentProgress exists in, and return that part name and how far along it we are
   let audioFiles = libraryItem.media.audioFiles;
@@ -210,6 +287,7 @@ function partNameAndRelativeProgress(currentProgress, libraryItem) {
 }
 
 async function buildProgress(libraryItem, updateObject) {
+  console.log("🚀 ~ file: utils.js:244 ~ buildProgress ~ buildProgress");
   let partId = updateObject.libraryItemIdAndFileName.split("/")[1]; // li_{string}/Part##.mp3
   let audioFiles = libraryItem.media.audioFiles;
   let res = {
@@ -239,6 +317,9 @@ async function getMediaURI(id) {
 }
 
 async function getMetadataResult(libraryItemId) {
+  console.log(
+    "🚀 ~ file: utils.js:274 ~ getMetadataResult ~ getMetadataResult"
+  );
   if (libraryItemId == "root") {
     let libraryItems = await getLibraryItems();
     return await buildLibraryMetadataResult(libraryItems);
@@ -257,6 +338,9 @@ async function getMetadataResult(libraryItemId) {
 }
 
 async function updateAudioBookshelfProgress(updateObject) {
+  console.log(
+    "🚀 ~ file: utils.js:293 ~ updateAudioBookshelfProgress ~ updateAudioBookshelfProgress"
+  );
   // 1. grab the library item
   // 2. sum up all parts prior to current from updateObject (grabing durations from step 1)
   // 3. add updateObject.positionMillis to sum from step 2

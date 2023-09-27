@@ -68,7 +68,7 @@ This is the actual express and soap server. 2 things happen in this file:
    - Manifest
      - Version: 1.0
      - URI: `https:<the_url_you_defined_for_this_server_above>/manifest`
-   - Support manifest file: check this box
+   - Support manifest file: original instructions said to check this box, I couldn't add the service if I did. YMMV
 3. Submit (sometimes this randomly fails, and you need to go back and try again). You should see "Success" if it worked.
 4. Add the new service to the Sonos mobile app
    - Settings -> Services + Voice -> Search for your new service -> "Add to Sonos" -> "Set up audiobookshelf
@@ -77,24 +77,20 @@ This is the actual express and soap server. 2 things happen in this file:
 ### Step 2: Setting up your Audiobookshelf Sonos Server
 
 1. Clone / download and enter the directory containing this repo
-   - `git clone git@github.com:jmt-gh/audiobookshelf-sonos.git && cd audiobookshelf-sonos`
-2. Edit `config.js` to match your necessary settings. A few minor things to note:
-   - `SOAP_ENDPOINT`: This is the `/wsdl` part of the `Endpoint URL` and `Secure Endpoint URL` defined in the CSD earlier
-   - `SOAP_URI`: This is the URL part of the `Endpoint URL` and `Secure Endpoint URL` defined in the CSD earlier -- the URL where this server will be acessible from
+   - `git clone git@github.com:jt196/audiobookshelf-sonos.git && cd audiobookshelf-sonos`
+2. Edit `.env.template` to match your necessary settings. A few minor things to note:
+   - `SOAP_URI`: This is the URL part of the `Endpoint URL` and `Secure Endpoint URL` defined in the CSD earlier -- the URL where this server will be accessible from
 
 ```
-module.exports = Object.freeze({
-   HTTP_PORT: , // what port to for express to listen on. Where your SOAP && HTTP requests should end up
-   SOAP_ENDPOINT: '/wsdl', // what endpoint sonos will reach out to. Defined in the custom service descriptor
-   SONOS_WSDL_FILE: fs.readFileSync('sonos.wsdl', 'utf8'),
-   SOAP_URI: '', // https://yoursoap.url.com
-   ABS_URI: '', // http://your.url.com
-   ABS_LIBRARY_ID: '', // lib_*****
-   ABS_TOKEN: '' // ABS -> settings -> users -> select user -> API TOKEN
-})
+SOAP_URI=<url_of_the_soap_server>
+ABS_URI=<your_abs_url>
+ABS_LIBRARY_ID=<abs_library_id>
+ABS_TOKEN=<abs_api_token>
 ```
 
-3. Update the `sonos.wsdl` file (line 2062) with your SOAP_URI
+3. Copy the .env.template file to a .env file: `cp .env.template .env`
+
+4. Update the `sonos.wsdl` file (line 2062) with your SOAP_URI
 
 ```
     <wsdl:service name="Sonos">
@@ -106,8 +102,11 @@ module.exports = Object.freeze({
 
 ### Step 3: Start the server and enjoy
 
-1. `node soap-server.js`
-2. Open the Sonos mobile app and select audiobookshelf
-3. Select a book to listen to
-4. If there is already progress on the book, it should start from where Audiobookshelf left off
+1. Install the node packages: `npm i`
+2. Install nodemon globally: `npm install -g nodemon`
+3. `nodemon soap-server.js`
+4. Open the Sonos mobile app and select audiobookshelf
+5. This is where my progress stops
+6. Select a book to listen to
+7. If there is already progress on the book, it should start from where Audiobookshelf left off
    - Otherwise it will start from the beginning

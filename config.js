@@ -1,4 +1,5 @@
 const fs = require("fs");
+require("dotenv").config();
 
 module.exports = Object.freeze({
   HTTP_PORT: 80, // what port to for express to listen on. Where your SOAP && HTTP requests should end up

@@ -5,8 +5,8 @@ WORKDIR /app
 
 COPY ["package.json", "package-lock.json", "./"]
 
-RUN npm install --production
+RUN npm install --production && npm install -g nodemon
 
 COPY . .
 
-CMD ["node", "server.js"]
+CMD ["nodemon", "server.js"]
